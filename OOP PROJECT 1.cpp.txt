@@ -1,0 +1,463 @@
+               //-----------------UNIVERSITY COURSE REGISTERATION SYSTEM---------------------//         
+#include<iostream>
+#include<vector>
+#include<map>
+#include<fstream>
+#include<iomanip>
+using namespace std;
+
+enum userType{ STUDENT, FACULTY
+};
+
+enum CourseLevel{BEGINNER, INTERMEDIATE, ADVANCED
+};
+string getCourseLevelName(CourseLevel level){
+    switch(level){
+        case BEGINNER: return "Beginner";
+        case INTERMEDIATE: return "Intermediate";
+        case ADVANCED: return "Advanced";
+        default: return "Unknown";
+    }
+}
+
+double getGradePoint(double marks){
+	if(marks >= 84.5){
+	    return 4.00;
+    }	
+    if(marks >= 79.5){
+    	return 3.70;
+	}
+	if(marks >= 74.5){
+		return 3.40;
+	}
+	if(marks >= 69.5){
+		return 3.00;
+	}
+	if(marks >= 64.5){
+		return 2.50;
+	}
+	if(marks >= 59.5){
+		return 2.00;
+	}
+	if(marks >= 54.5){
+		return 1.50;
+	}
+	if(marks >= 49.5){
+		return 1.00;
+	}
+	    return 0.00;
+    
+}
+
+class Course{            //COURSE CLASS
+	public:
+		string code;
+		string title;
+		string schedule;
+		int credits;
+		CourseLevel level;
+		vector<string>prerequisites;
+		
+		Course(){           //DEFAULT CONSTRUCTOR
+		}
+		Course(string c, string t, int cr, string s, CourseLevel l) : code(c), title(t), credits(cr), schedule(s), level(l){      //PARAMETERIZED CONSTRUCTOR
+		}                   
+		                    //(DEFAULT + PARAMETERIZED CONSTRUCTOR) = CONSTRUCTOR OVERLOADING
+		                    
+	void addPrerequisite(string p){
+		prerequisites.push_back(p);
+	}	                    
+		void display()const{
+			cout<<"Code: "<<code<<endl;
+			cout<<"Title: "<<title<<endl;
+			cout<<"Credits: "<<credits<<endl;
+			cout<<"Schedule: "<<schedule<<endl;
+			cout<<"Level: "<<getCourseLevelName(level)<<endl;
+			
+		if(!prerequisites.empty()){
+			cout<<"Prerequisites: ";
+			
+			for(string p: prerequisites){
+			cout<<p<<" ";
+			cout<<endl;
+		    }
+		}	
+			
+	}
+};
+                               //ABSTRACT CLASS(USER)
+class user{                         
+	protected:
+		string name;
+		int id;
+		
+	public:
+		user(){       //DEFAULT CONSTRUCTOT
+		}
+	user(string n, int i) : name(n), id(i){         //PARAMETERIZED
+	}	
+	virtual void displayInfo() = 0;     //PURE VIRTUAL FUNCTION
+	virtual void accessPortal() = 0;    //PURE VIRTUAL FUNCTION
+	
+	int getId()const{return id;
+	}
+	string getName()const{return name;
+	}
+
+};
+                                    //STUDENT CLASS
+class Student : public user{                 
+    private:
+    string contact;
+	vector<string>registeredCourses;
+	map<string, double>courseGrades;
+	
+	public:
+		Student(){
+		}
+		Student(string n, int i, string c) : user(n, i), contact(c){
+		}
+		void registerCourse(string courseCode){
+			registeredCourses.push_back(courseCode);
+		}
+		
+		void addGrade(string courseCode, double grade){
+			courseGrades[courseCode] = grade;
+		}
+		
+		double calculateGPA(map<string, Course>& courseMap){
+			double totalPoints = 0;
+			int totalCredits = 0;
+			
+		for(string code : registeredCourses){
+		
+			if(courseGrades.count(code) && courseMap.count(code)){
+				double marks = courseGrades[code];
+				int credits = courseMap[code].credits;
+					
+					totalPoints += getGradePoint(marks)*credits;
+					totalCredits += credits;
+				}
+			}
+	
+			return(totalCredits == 0) ? 0.0 : totalPoints/totalCredits;
+	}
+		
+		void displayInfo(){
+			cout<<"Student Name: "<<name<<endl;
+			cout<<"ID: "<<id<<endl;
+			cout<<"Contact: "<<contact<<endl;
+			
+		}
+		void accessPortal(){
+			cout<<"Registered Courses: "<<endl;
+			for(string c : registeredCourses){
+			cout<<c<<" ";
+			cout<<endl;
+		    }
+		}
+		
+		vector<string>getRegisteredCourses(){
+			return registeredCourses;
+		}
+
+
+};
+
+class Faculty : public user{              //FACULTY CLASS
+	private:
+		string email;
+		vector<string>assignedCourses;
+		map<int, map<string, double> >studentGrades;
+		
+		public:
+			Faculty(){
+			}
+			Faculty(string n, int i, string e) : user(n, i), email(e){
+			}
+			
+		void assignCourses(string courseCode){
+				assignedCourses.push_back(courseCode);
+			}
+			
+		void gradeStudent(int studentId, string courseCode, double grade){
+				studentGrades[studentId][courseCode] = grade;
+			}
+			
+		void displayInfo(){
+				cout<<"Faculty Name: "<<name<<endl;
+				cout<<"ID: "<<id<<endl;
+				cout<<"Email: "<<email<<endl;
+			}
+		void accessPortal(){
+			cout<<"Assigned Courses: "<<endl;
+			for(string c : assignedCourses){
+			cout<<c<<" ";
+			cout<<endl;
+		    }
+	}
+	    vector<string>getAssignedCourses(){
+			return assignedCourses;
+		}
+	
+};
+                            //GLOBAL DATA
+        map<string, Course>allCourses;
+		map<int, Student>allStudents; 
+		map<int, Faculty>allFaculties;
+		
+		void loadDefaultCourses(){
+			
+			Course c1("CS101", "Introduction to Programming", 4 , "Mon to Wed 9AM", BEGINNER);
+			Course c2("MATH102", "Multivariable Calculus", 3 , "Mon to Tue 9AM", INTERMEDIATE);
+			Course c3("ENG103", "Expository Writing", 3 , "Mon to Wed 9AM", INTERMEDIATE);
+			Course c4("ECO104", "Introduction to Economics", 2 , "Thu 12PM", BEGINNER);
+			Course c5("CS105", "Digital Logic Design", 3 , "Wed to Thu 9AM", INTERMEDIATE);
+			Course c6("ISL106", "Islamic Studies", 2 , "Wed 9AM", BEGINNER);
+			
+			allCourses["CS101"] = c1;
+			allCourses["MATH102"] = c2;
+			allCourses["ENG103"] = c3;
+			allCourses["ECO104"] = c4;
+			allCourses["CS105"] = c5;
+			allCourses["ISL106"] = c6;
+			
+		} 
+		                         //REGISTER STUDENT
+		void registerStudent(){
+			string name;
+			string contact;
+			int id;
+			
+			cout<<"Enter Student Name: ";
+			cin.ignore();
+			getline(cin, name);
+			cout<<"Enter Student ID: ";
+			cin>>id;
+			cout<<"Enter Contact Info: ";
+			cin.ignore();
+			getline(cin, contact);
+			
+		Student s(name, id, contact);
+		cout<<"Available Courses: "<<endl;
+		for(auto& pair : allCourses)pair.second.display();
+		
+		int n;
+		cout<<"How many courses to register?";
+		cin>>n;
+		
+		for(int i = 0; i < n; i++){
+			string code;
+			cout<<"Enter Course Code: "<<endl;
+			cin>>code;
+			
+			if(allCourses.count(code))
+			{
+			    s.registerCourse(code);
+				
+			}
+			else{
+			    cout<<"Invalid Course Code."<<endl;
+		}
+		}
+		allStudents[id] = s;	
+	}
+	                              //ADD FACULTY
+	void addFaculty(){
+		string name;
+		string email;
+		int id;
+		
+			cout<<"Enter Faculty Name: ";
+			cin.ignore();
+			getline(cin, name);
+			cout<<"Enter Faculty ID: ";
+			cin>>id;
+			cout<<"Enter Email: ";
+			cin.ignore();
+			getline(cin, email);
+			
+		Faculty f(name, id, email);
+		cout<<"Available Courses: "<<endl;
+		for(auto& pair : allCourses)pair.second.display(); 
+		
+		int n;
+		cout<<"How many courses to assign?";
+		cin>>n;
+		
+		for(int i = 0; i < n; i++){
+			string code;
+			
+			cout<<"Enter Course Code: "<<endl;
+			cin>>code;
+			
+			if(allCourses.count(code)){
+			f.assignCourses(code);
+			}else{
+				cout<<"Invalid Course Code."<<endl;
+			}
+		}
+		
+		allFaculties[id] = f;
+	}
+	                               //ENTER GRADES
+	void enterGrades(){
+		int fid;
+		
+		cout<<"Enter Faculty ID: "<<endl;
+		cin>>fid;
+		
+		if(!allFaculties.count(fid)){
+			cout<<"Faculty not found."<<endl;
+			return;
+		}
+		
+		Faculty& f = allFaculties[fid];
+		vector<string>courses = f.getAssignedCourses();
+		
+		for(auto& pair : allStudents){
+			Student& s = pair.second;
+			cout<<"Enter marks for students: "<<s.getName()<<"(ID: "<<s.getId()<<"):"<<endl;
+			
+			for(string course : courses){
+				double marks;
+				
+				cout<<"---"<<course<<": ";
+				cin>>marks;
+				
+				s.addGrade(course, marks);
+				f.gradeStudent(s.getId(), course, marks);
+			}
+		}
+	}
+	
+	                           //DISPLAY REPORTS
+	void displayReports(){
+		for(auto& pair : allStudents){
+			Student& s = pair.second;
+			
+			s.displayInfo();       //NAME AND ID
+			s.accessPortal();      //REGISTERED COURSES
+			
+			double gpa = s.calculateGPA(allCourses);
+			cout<<fixed<<setprecision(2);
+			cout<<"GPA: "<<gpa<<endl;
+		}
+	}
+	
+	                           //SAVE TO FILE
+	void saveToFile(){
+		
+		ofstream out("students.txt");
+		for(auto& pair : allStudents){
+			Student s = pair.second; 
+			out<<s.getId()<<" "<<s.getName()<<endl;
+		}
+		
+		out.close();
+		cout<<"Data saved to 'students.txt'."<<endl;
+	}
+	
+	                           //MAIN MENU
+int main()
+{
+	loadDefaultCourses();
+	int choice;
+	
+	do{
+		cout<<"\n------------UNIVERSITY SYSTEM MENU-----------\n";
+		
+		cout<<"1. Register Student "<<endl;
+		cout<<"2. Add Faculty "<<endl;
+		cout<<"3. Enter Grades "<<endl;
+		cout<<"4. Display GPA Reports "<<endl;
+		cout<<"5. Save Records "<<endl;
+		cout<<"6. View All Students"<<endl;
+		cout<<"7. View All Faculty Members "<<endl;
+		cout<<"8. View All Courses"<<endl;
+		cout<<"9. Search Student By ID "<<endl;
+		cout<<"10. Search Faculty By ID "<<endl;
+		cout<<"0. Exit "<<endl;
+		cout<<"   Enter Choice: "<<endl;
+		cin>>choice;
+		
+		switch(choice){
+			case 1:
+				registerStudent();
+				break;
+			case 2:
+			    addFaculty();
+				break;
+			case 3:
+				enterGrades();
+				break;
+			case 4:
+				displayReports();
+				break;
+			case 5:
+				saveToFile();
+				break;
+			case 6:
+				for(auto& pair : allStudents)            //SHOW STUDENTS BASIC INFO
+				pair.second.displayInfo();
+				break;
+			case 7:
+				for(auto& pair : allFaculties)             //SHOW FACULTIES BASIC INFO
+				pair.second.displayInfo();
+				break;
+			case 8:
+				for(auto& pair : allCourses)               //SHOW AVAILABLE COURSES INFO
+				pair.second.display();
+				break;
+			case 9:
+			{
+				int id;
+				cout<<"Enter Student ID: ";
+				cin>>id;
+				
+				if(allStudents.count(id)){
+					allStudents[id].displayInfo();
+					allStudents[id].accessPortal();
+				}
+				else{
+					cout<<"Student not Found."<<endl;
+				}
+				break;
+			}
+			case 10:
+			{
+				int id;
+				cout<<"Enter Faculty ID: ";
+				cin>>id;
+				
+				if(allFaculties.count(id)){
+					allFaculties[id].displayInfo();
+					allFaculties[id].accessPortal();
+				}
+				else{
+					cout<<"Faculty not Found."<<endl;
+				}
+				break;
+			}	
+		
+			case 0:
+				cout<<"Exit Program."<<endl;
+				break;
+				
+			default:
+			    cout<<"Invalid choice."<<endl;	
+		}
+		
+	}
+	while(choice != 0);                     //REPEAT MENU(----0----)
+	
+	return 0;
+}
+																																								  							   						   						   						   						                          
+
+
+
+
+
+
+
